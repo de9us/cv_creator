@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Creator - Создатель резюме</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div>
+                    <h1>📄 CV Creator</h1>
+                    <p class="subtitle">Создайте профессиональное резюме за несколько минут</p>
+                </div>
+                <div class="header-controls">
+                    <div class="version-selector">
+                        <label for="versionSelect">Версия:</label>
+                        <select id="versionSelect" class="template-select" onchange="loadVersion(this.value)">
+                            <option value="current">Текущая</option>
+                        </select>
+                        <button class="btn-version" onclick="saveNewVersion()" title="Сохранить новую версию">💾</button>
+                        <button class="btn-version" onclick="deleteVersion()" title="Удалить версию">🗑️</button>
+                    </div>
+                    <button class="btn-theme" id="themeToggle" title="Переключить тему">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <div class="save-indicator" id="saveIndicator">
+                        <span class="save-icon">💾</span>
+                        <span class="save-text">Автосохранено</span>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-text" id="progressText">0% заполнено</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Форма ввода данных -->
+            <div class="form-section">
+                <h2>Заполните данные</h2>
+                
+                <form id="cvForm">
+                    <!-- Личная информация -->
+                    <section class="form-group">
+                        <h3>Личная информация</h3>
+                        <div class="form-field photo-upload-field">
+                            <label for="photoUpload">Фото профиля</label>
+                            <div class="photo-upload-container">
+                                <div class="photo-preview" id="photoPreview">
+                                    <span class="photo-placeholder">📷</span>
+                                    <span class="photo-text">Нажмите для загрузки</span>
+                                </div>
+                                <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                                <button type="button" class="btn-photo-remove" id="photoRemoveBtn" onclick="removePhoto()" style="display: none;">Удалить фото</button>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="firstName">Имя *</label>
+                                <input type="text" id="firstName" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="lastName">Фамилия *</label>
+                                <input type="text" id="lastName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" required pattern="[^\s@]+@[^\s@]+\.[^\s@]+">
+                            </div>
+                            <div class="form-field">
+                                <label for="phone">Телефон *</label>
+                                <input type="tel" id="phone" required pattern="[\d\s\-\+\(\)]+" minlength="10">
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="address">Адрес</label>
+                            <input type="text" id="address">
+                        </div>
+                        <div class="form-field">
+                            <label for="linkedin">LinkedIn</label>
+                            <input type="url" id="linkedin">
+                        </div>
+                        <div class="form-field">
+                            <label for="github">GitHub</label>
+                            <input type="url" id="github">
+                        </div>
+                    </section>
+
+                    <!-- О себе -->
+                    <section class="form-group">
+                        <h3>О себе</h3>
+                        <div class="form-field">
+                            <label for="summary">
+                                Краткое описание
+                                <span class="help-icon" data-help="Опишите себя в 2-3 предложениях. Укажите ваш опыт, ключевые навыки и профессиональные цели.">
+                                    ?
+                                    <span class="tooltip">Опишите себя в 2-3 предложениях</span>
+                                </span>
+                                <span class="char-counter" id="summaryCounter">0 / 500</span>
+                            </label>
+                            <textarea id="summary" rows="4" placeholder="Расскажите о себе в нескольких предложениях..." maxlength="500" oninput="updateCharCounter('summary', 500)"></textarea>
+                            <button type="button" class="example-btn" onclick="showExample('summary', 'Опытный веб-разработчик с более чем 5 годами опыта в создании современных веб-приложений. Специализируюсь на JavaScript, React и Node.js. Стремлюсь к созданию качественных и масштабируемых решений.')">
+                                Показать пример
+                            </button>
+                            <div class="example-text" id="summaryExample"></div>
+                        </div>
+                    </section>
+
+                    <!-- Опыт работы -->
+                    <section class="form-group">
+                        <h3>Опыт работы</h3>
+                        <div id="experienceContainer">
+                            <div class="experience-item draggable" draggable="true">
+                                <div class="drag-handle" title="Перетащите для изменения порядка">⋮⋮</div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Должность *</label>
+                                        <input type="text" class="exp-position" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Компания *</label>
+                                        <input type="text" class="exp-company" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Дата начала *</label>
+                                        <input type="month" class="exp-start" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Дата окончания</label>
+                                        <input type="month" class="exp-end">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" class="exp-current"> По настоящее время
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>
+                                        Описание
+                                        <span class="help-icon" data-help="Опишите ваши обязанности, достижения и используемые технологии. Используйте маркированные списки для лучшей читаемости.">
+                                            ?
+                                            <span class="tooltip">Опишите обязанности и достижения</span>
+                                        </span>
+                                        <span class="char-counter exp-desc-counter">0 / 1000</span>
+                                    </label>
+                                    <textarea class="exp-description" rows="3" placeholder="Опишите ваши обязанности и достижения..." maxlength="1000" oninput="updateCharCounterForElement(this, 1000)"></textarea>
+                                    <button type="button" class="example-btn" onclick="showExampleForElement(this, '• Разработка и поддержка веб-приложений на React и Node.js\n• Оптимизация производительности, что привело к увеличению скорости загрузки на 40%\n• Работа в команде из 5 разработчиков по методологии Agile')">
+                                        Показать пример
+                                    </button>
+                                    <div class="example-text"></div>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeExperience(this)">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addExperience()">+ Добавить место работы</button>
+                    </section>
+
+                    <!-- Образование -->
+                    <section class="form-group">
+                        <h3>Образование</h3>
+                        <div id="educationContainer">
+                            <div class="education-item draggable" draggable="true">
+                                <div class="drag-handle" title="Перетащите для изменения порядка">⋮⋮</div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Учебное заведение *</label>
+                                        <input type="text" class="edu-school" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Степень/Специальность *</label>
+                                        <input type="text" class="edu-degree" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Дата начала</label>
+                                        <input type="month" class="edu-start">
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Дата окончания</label>
+                                        <input type="month" class="edu-end">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeEducation(this)">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addEducation()">+ Добавить образование</button>
+                    </section>
+
+                    <!-- Навыки -->
+                    <section class="form-group">
+                        <h3>Навыки</h3>
+                        <div class="form-field">
+                            <label for="skills">
+                                Перечислите навыки через запятую
+                                <span class="help-icon" data-help="Укажите ваши технические навыки, инструменты и технологии. Разделяйте запятыми.">
+                                    ?
+                                    <span class="tooltip">Укажите навыки через запятую</span>
+                                </span>
+                            </label>
+                            <input type="text" id="skills" placeholder="JavaScript, React, Node.js, Python...">
+                            <button type="button" class="example-btn" onclick="showExample('skills', 'JavaScript, React, Node.js, TypeScript, Python, Git, Docker, AWS, MongoDB, PostgreSQL')">
+                                Показать пример
+                            </button>
+                            <div class="example-text" id="skillsExample"></div>
+                        </div>
+                    </section>
+
+                    <!-- Языки -->
+                    <section class="form-group">
+                        <h3>Языки</h3>
+                        <div id="languagesContainer">
+                            <div class="language-item">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Язык *</label>
+                                        <input type="text" class="lang-name" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Уровень *</label>
+                                        <select class="lang-level" required>
+                                            <option value="">Выберите уровень</option>
+                                            <option value="A1">A1 - Начальный</option>
+                                            <option value="A2">A2 - Элементарный</option>
+                                            <option value="B1">B1 - Средний</option>
+                                            <option value="B2">B2 - Выше среднего</option>
+                                            <option value="C1">C1 - Продвинутый</option>
+                                            <option value="C2">C2 - Владение в совершенстве</option>
+                                            <option value="Родной">Родной</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeLanguage(this)">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addLanguage()">+ Добавить язык</button>
+                    </section>
+
+                    <!-- Проекты -->
+                    <section class="form-group">
+                        <h3>Проекты</h3>
+                        <div id="projectsContainer">
+                            <div class="project-item">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Название проекта *</label>
+                                        <input type="text" class="proj-name" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Ссылка</label>
+                                        <input type="url" class="proj-url" placeholder="https://...">
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label>Описание</label>
+                                    <textarea class="proj-description" rows="3" placeholder="Опишите проект и используемые технологии..."></textarea>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeProject(this)">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addProject()">+ Добавить проект</button>
+                    </section>
+
+                    <!-- Сертификаты -->
+                    <section class="form-group">
+                        <h3>Сертификаты</h3>
+                        <div id="certificatesContainer">
+                            <div class="certificate-item">
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Название сертификата *</label>
+                                        <input type="text" class="cert-name" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Организация</label>
+                                        <input type="text" class="cert-org">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label>Дата получения</label>
+                                        <input type="month" class="cert-date">
+                                    </div>
+                                    <div class="form-field">
+                                        <label>Ссылка на сертификат</label>
+                                        <input type="url" class="cert-url" placeholder="https://...">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeCertificate(this)">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addCertificate()">+ Добавить сертификат</button>
+                    </section>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Создать резюме</button>
+                        <button type="button" class="btn-secondary" onclick="clearForm()">Очистить форму</button>
+                        <button type="button" class="btn-export" onclick="exportToJSON()">💾 Экспорт JSON</button>
+                        <button type="button" class="btn-export" onclick="importFromJSON()">📥 Импорт JSON</button>
+                        <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+                    </div>
+                </form>
+            </div>
+
+            <!-- Предпросмотр резюме -->
+            <div class="preview-section">
+                <div class="preview-header">
+                    <h2>Предпросмотр</h2>
+                    <div class="template-selector">
+                        <label for="templateSelect">Шаблон:</label>
+                        <select id="templateSelect" class="template-select" onchange="changeTemplate(this.value)">
+                            <option value="classic">Классический</option>
+                            <option value="modern">Современный</option>
+                            <option value="minimal">Минималистичный</option>
+                        </select>
+                    </div>
+                    <div class="color-scheme-selector">
+                        <label for="colorSchemeSelect">Цвет:</label>
+                        <select id="colorSchemeSelect" class="template-select" onchange="changeColorScheme(this.value)">
+                            <option value="blue">Синий</option>
+                            <option value="green">Зеленый</option>
+                            <option value="purple">Фиолетовый</option>
+                            <option value="red">Красный</option>
+                            <option value="orange">Оранжевый</option>
+                            <option value="teal">Бирюзовый</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="preview-actions">
+                    <button class="btn-export" onclick="exportToPDF()">📥 Экспорт в PDF</button>
+                    <button class="btn-export" onclick="printCV()">🖨️ Печать</button>
+                    <button class="btn-export" onclick="exportToHTML()">🌐 Экспорт HTML</button>
+                    <button class="btn-export" onclick="exportToMarkdown()">📝 Экспорт Markdown</button>
+                    <button class="btn-export" onclick="generateQRCode()">📱 QR-код</button>
+                </div>
+                <div id="cvPreview" class="cv-preview">
+                    <div class="cv-placeholder">
+                        <p>Заполните форму слева, чтобы увидеть предпросмотр резюме</p>
+                    </div>
+                </div>
+                <div id="qrCodeContainer" style="display: none; text-align: center; margin-top: 20px; padding: 20px; background: var(--background); border-radius: 8px;">
+                    <h3>QR-код резюме</h3>
+                    <div id="qrCode"></div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px;">Отсканируйте QR-код для быстрого доступа к резюме</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div id="notification" class="notification"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
